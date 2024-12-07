@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { SearchBar } from '@/components/SearchBar';
 import { LocationDisplay } from '@/components/LocationDisplay';
 import { SearchHistory } from '@/components/SearchHistory';
-import { BusinessTypeSelector } from '@/components/BusinessTypeSelector';
 import { Toaster } from '@/components/ui/toaster';
 import { useToast } from '@/hooks/use-toast';
 import { StorageManager } from '@/lib/storage';
@@ -10,6 +9,16 @@ import { LocationData, Competitor } from '@/lib/types';
 import { analyzeLocation } from '@/lib/gpt';
 import { searchCompetitors } from '@/lib/places';
 import { useAPI } from '@/components/APILoadingProvider';
+
+// Geocoding response types
+interface GeocodeFeature {
+  center: [number, number];
+  place_name: string;
+}
+
+interface GeocodeResponse {
+  features: GeocodeFeature[];
+}
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -30,48 +39,31 @@ export default function App() {
   const storage = StorageManager.getInstance();
   const { isLoaded } = useAPI();
 
+  useEffect(() => {
+    const sendHeight = () => {
+      if (window.parent !== window) {
+        window.parent.postMessage({
+          type: 'setHeight',
+          height: document.documentElement.scrollHeight
+        }, '*');
+      }
+    };
 
-  const notifySearchPerformed = () => {
-  if (window.parent !== window) {
-    window.parent.postMessage({
-      type: 'search',
-      count: currentSearchCount
-    }, '*');
-  }
-};
-  
-useEffect(() => {
-  const sendHeight = () => {
-    if (window.parent !== window) {
-      window.parent.postMessage({
-        type: 'setHeight',
-        height: document.documentElement.scrollHeight
-      }, '*');
-    }
-  };
-
-  // Send height on mount
-  sendHeight();
-  
-  // Send height on window resize
-  window.addEventListener('resize', sendHeight);
-  
-  // Optional: Send height when content changes
-  const observer = new ResizeObserver(sendHeight);
-  observer.observe(document.body);
-  
-  return () => {
-    window.removeEventListener('resize', sendHeight);
-    observer.disconnect();
-  };
-}, []);
-
-
+    sendHeight();
+    window.addEventListener('resize', sendHeight);
+    const observer = new ResizeObserver(sendHeight);
+    observer.observe(document.body);
+    
+    return () => {
+      window.removeEventListener('resize', sendHeight);
+      observer.disconnect();
+    };
+  }, []);
   
   useEffect(() => {
     setRecentSearches(storage.getRecentSearches());
     setFavorites(storage.getFavorites());
-  }, []);
+  }, [storage]);
 
   useEffect(() => {
     const fetchCompetitors = async () => {
@@ -97,9 +89,18 @@ useEffect(() => {
         setCompetitors([]);
       }
     };
-
+  
     fetchCompetitors();
-  }, [location?.coordinates, selectedBusinessTypes, toast]);
+  }, [location, selectedBusinessTypes, toast]);
+
+  const sendSearchNotification = () => {
+    if (window.parent !== window) {
+      window.parent.postMessage({
+        type: 'search',
+        count: 1
+      }, '*');
+    }
+  };
 
   const handleSearch = async (address: string) => {
     if (!isLoaded) {
@@ -128,7 +129,7 @@ useEffect(() => {
         throw new Error('Geocoding failed');
       }
 
-      const data = await response.json();
+      const data = await response.json() as GeocodeResponse;
       
       if (!data.features || data.features.length === 0) {
         throw new Error('Address not found in the United States');
@@ -164,6 +165,7 @@ useEffect(() => {
       setLocation(updatedLocation);
       storage.addSearch(updatedLocation);
       setRecentSearches(storage.getRecentSearches());
+      sendSearchNotification();
 
       if (analysis.error) {
         toast({
@@ -235,7 +237,7 @@ useEffect(() => {
       <main className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Location Analysi
+            Location Analysis
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Enter a US address to analyze its location and get detailed insights
@@ -247,7 +249,6 @@ useEffect(() => {
 
         <div className="space-y-4 max-w-2xl mx-auto">
           <SearchBar onSearch={handleSearch} isLoading={isLoading} />
-        
         </div>
         
         {location && (

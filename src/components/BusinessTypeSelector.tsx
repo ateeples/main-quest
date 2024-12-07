@@ -132,9 +132,9 @@ export function BusinessTypeSelector({ onSelectionChange }: BusinessTypeSelector
                                         htmlFor={type}
                                         className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                       >
-                                        {type.split('_').map(word => 
-                                          word.charAt(0).toUpperCase() + word.slice(1)
-                                        ).join(' ')}
+                                       {type.split('_').map((word: string) => 
+  word.charAt(0).toUpperCase() + word.slice(1)
+).join(' ')}
                                       </label>
                                     </div>
                                   ))}
