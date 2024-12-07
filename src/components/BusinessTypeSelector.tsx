@@ -12,6 +12,7 @@ import { BUSINESS_TYPE_HIERARCHY } from '@/lib/constants';
 
 interface BusinessTypeSelectorProps {
   onSelectionChange: (selectedTypes: string[]) => void;
+  initialSelection?: string[];
 }
 
 export function BusinessTypeSelector({ onSelectionChange }: BusinessTypeSelectorProps) {

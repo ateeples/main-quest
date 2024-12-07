@@ -26,7 +26,7 @@ export function APILoadingProvider({ children }: APILoadingProviderProps) {
   });
 
   useEffect(() => {
-    let timeoutId: number;
+    let timeoutId: number | undefined;
 
     const checkAPIStatus = () => {
       if (window.google?.maps?.places) {

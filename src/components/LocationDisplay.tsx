@@ -8,11 +8,11 @@ import { CompetitorsList } from './CompetitorsList';
 import { BusinessTypeSelector } from './BusinessTypeSelector';
 
 interface LocationDisplayProps {
-  location?: LocationData | null;
-  isAnalyzing?: boolean;
-  onBusinessTypesChange?: (types: string[]) => void;
-  competitors?: Competitor[];
-  isLoadingCompetitors?: boolean;
+  location: LocationData | null; // Remove optional since we check for null
+  isAnalyzing: boolean; // Remove optional since we provide default
+  onBusinessTypesChange: (types: string[]) => void; // Remove optional to fix TypeScript error
+  competitors: Competitor[]; // Remove optional since we provide default
+  isLoadingCompetitors: boolean; // Remove optional since we provide default
 }
 
 export function LocationDisplay({ 
@@ -25,6 +25,21 @@ export function LocationDisplay({
   if (!location) {
     return null;
   }
+
+  const handleGoogleMapsClick = () => {
+    window.open(
+      `https://www.google.com/maps/search/${encodeURIComponent(
+        location.address
+      )}`,
+      '_blank'
+    );
+  };
+
+  const handleBusinessTypesChange = (types: string[]) => {
+    if (onBusinessTypesChange) {
+      onBusinessTypesChange(types);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -47,14 +62,7 @@ export function LocationDisplay({
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => {
-                    window.open(
-                      `https://www.google.com/maps/search/${encodeURIComponent(
-                        location.address
-                      )}`,
-                      '_blank'
-                    );
-                  }}
+                  onClick={handleGoogleMapsClick}
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Open in Google Maps
@@ -78,7 +86,7 @@ export function LocationDisplay({
         </CardHeader>
         <CardContent>
           <BusinessTypeSelector 
-            onSelectionChange={onBusinessTypesChange}
+            onSelectionChange={handleBusinessTypesChange}
             initialSelection={location.selectedBusinessTypes || []}
           />
         </CardContent>
